@@ -1,3 +1,45 @@
 [tools]
 go = "1.26"
+golangci-lint = "2.11"
 lefthook = "2.1"
+lychee = "0.23"
+node = "lts"
+typos = "1.45"
+
+[tasks.setup]
+description = "Setup the project"
+run = '''
+find . -name "go.mod" -not -path "./vendor/*" | \
+  xargs -0 -n 1 -P $(nproc) \
+  bash -c 'cd $(dirname "$0") && go mod tidy'
+lefthook install
+'''
+
+[tasks."go:lint"]
+description = "Lint Go files"
+run = '''
+#! /usr/bin/bash
+find . -name "go.mod" -not -path "./vendor/*" | \
+  xargs -0 -n 1 -P $(nproc) \
+  bash -c 'cd $(dirname "$0") && golangci-lint run ./...'
+'''
+
+[tasks."go:fmt"]
+description = "Format Go files"
+run = '''
+#! /usr/bin/bash
+find . -name "go.mod" -not -path "./vendor/*" | \
+  xargs -0 -n 1 -P $(nproc) \
+  bash -c 'cd $(dirname "$0") && go fmt' && \
+  echo "done"
+'''
+
+[tasks."go:test"]
+description = "Format Go files"
+run = '''
+#! /usr/bin/bash
+find . -name "go.mod" -not -path "./vendor/*" | \
+  xargs -0 -n 1 -P $(nproc) \
+  bash -c 'cd $(dirname "$0") && go test' && \
+  echo "done"
+'''
