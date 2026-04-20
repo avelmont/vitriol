@@ -1,0 +1,44 @@
+assert_lefthook_installed: true
+skip_lfs: true
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: Go Format, Lint, and Test
+      glob:
+        - "*.go"
+      group:
+        jobs:
+          - run: mise run go:fmt
+            tags:
+              - format
+            stage_fixed: true
+          - run: mise run go:lint
+            tags:
+              - lint
+            stage_fixed: true
+          - run: mise run go:test
+            tags:
+              - test
+    - name: Markdown lint
+      tags:
+        - lint
+        - docs
+      glob:
+        - "*.md"
+      exclude:
+        - CHANGELOG.md
+      run: lychee --max-concurrency 3 -- {staged_files}
+    - name: Typos
+      tags:
+        - lint
+      exclude:
+        - "*.svg"
+        - "*.png"
+      stage_fixed: true
+      run: typos --write-changes {staged_files}
+
+commit-msg:
+  commands:
+    lint:
+      run: "npx commitlint --edit {1}"
