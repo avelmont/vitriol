@@ -1,5 +1,6 @@
 [tools]
 go = "1.26"
+gofumpt = "latest"
 golangci-lint = "2.11"
 lefthook = "2.1"
 lychee = "0.23"
@@ -9,37 +10,21 @@ typos = "1.45"
 [tasks.setup]
 description = "Setup the project"
 run = '''
-find . -name "go.mod" -not -path "./vendor/*" | \
-  xargs -0 -n 1 -P $(nproc) \
-  bash -c 'cd $(dirname "$0") && go mod tidy'
+for dir in $(find . -name go.mod -exec dirname {} \;); do \
+go -C "$dir" mod tidy; done
 lefthook install
 '''
 
 [tasks."go:lint"]
 description = "Lint Go files"
-run = '''
-#! /usr/bin/bash
-find . -name "go.mod" -not -path "./vendor/*" | \
-  xargs -0 -n 1 -P $(nproc) \
-  bash -c 'cd $(dirname "$0") && golangci-lint run ./...'
-'''
+run = 'golangci-lint run $(find . -name go.mod -exec dirname {} \;)'
 
 [tasks."go:fmt"]
 description = "Format Go files"
-run = '''
-#! /usr/bin/bash
-find . -name "go.mod" -not -path "./vendor/*" | \
-  xargs -0 -n 1 -P $(nproc) \
-  bash -c 'cd $(dirname "$0") && go fmt' && \
-  echo "done"
-'''
+run = 'gofumpt -l -w .'
 
 [tasks."go:test"]
-description = "Format Go files"
-run = '''
-#! /usr/bin/bash
-find . -name "go.mod" -not -path "./vendor/*" | \
-  xargs -0 -n 1 -P $(nproc) \
-  bash -c 'cd $(dirname "$0") && go test' && \
-  echo "done"
+description = "Test Go"
+run = '''for dir in $(find . -name go.mod -exec dirname {} \;); do \
+go -C "$dir" test ./...; done
 '''
