@@ -9,15 +9,15 @@ pre-commit:
         - "*.go"
       group:
         jobs:
-          - run: mise run go:fmt
+          - run: gofumpt -l -w .
             tags:
               - format
             stage_fixed: true
-          - run: mise run go:lint
+          - run: golangci-lint run ./...
             tags:
               - lint
             stage_fixed: true
-          - run: mise run go:test
+          - run: go test ./...
             tags:
               - test
     - name: Markdown lint

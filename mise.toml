@@ -10,21 +10,18 @@ typos = "1.45"
 [tasks.setup]
 description = "Setup the project"
 run = '''
-for dir in $(find . -name go.mod -exec dirname {} \;); do \
-go -C "$dir" mod tidy; done
+go mod tidy
 lefthook install
 '''
 
-[tasks."go:lint"]
-description = "Lint Go files"
-run = 'golangci-lint run $(find . -name go.mod -exec dirname {} \;)'
+[tasks."build:crucible"]
+description = "Builds Crucible binary"
+run = 'go build -o bin/crucible ./cmd/crucible'
 
-[tasks."go:fmt"]
-description = "Format Go files"
-run = 'gofumpt -l -w .'
+[tasks."build:lapis"]
+description = "Builds Lapis binary"
+run = 'go build -o bin/lapis ./cmd/lapis'
 
-[tasks."go:test"]
-description = "Test Go"
-run = '''for dir in $(find . -name go.mod -exec dirname {} \;); do \
-go -C "$dir" test ./...; done
-'''
+[tasks."build:clean"]
+description = "Cleans the binary directory"
+run = 'rm -r ./bin'

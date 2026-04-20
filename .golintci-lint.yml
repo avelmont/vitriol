@@ -1,0 +1,7 @@
+linters:
+  enable:
+    - standard
+    - govet
+formatters:
+  enable:
+    - gofumpt
