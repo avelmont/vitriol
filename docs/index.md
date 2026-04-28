@@ -9,7 +9,7 @@ hero:
   actions:
     - theme: brand
       text: Source Code
-      link: https://codeberg.org/avelmont/vitriol
+      link: https://github.com/avelmont/vitriol
     - theme: alt
       text: Guide
       link: /guide
