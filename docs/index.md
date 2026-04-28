@@ -14,8 +14,8 @@ hero:
       text: Guide
       link: /guide
     - theme:
-        text: Architectural Overview
-        link: /architectural-overview
+      text: Architectural Overview
+      link: /architectural-overview
 features:
   - title: Reactive
     details: >

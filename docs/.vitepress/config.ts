@@ -34,7 +34,13 @@ export default withMermaid({
     ],
 
     sidebar: [
-
+      {
+        text: 'Guide',
+        link: '/guide',
+        items: [
+          { text: 'Workflow', link: '/guide/workflow' }
+        ]
+      }
     ],
 
     socialLinks: [
