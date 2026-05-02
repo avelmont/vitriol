@@ -1,0 +1,23 @@
+# --- Compilation Artifacts ---
+# Ignores the shared workspace build directory
+/target/
+
+# --- IDEs and Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# --- Environment and Secrets ---
+.env
+.env.*
+
+# --- Cargo Specifics ---
+# If you use 'cargo backup-project'
+*.bundle
+*.pyc
+
+# --- Optional: Local Cargo Config ---
+# Ignore local overrides that shouldn't be shared with the team
+.cargo/config.toml

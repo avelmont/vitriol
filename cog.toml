@@ -1,0 +1,4 @@
+# https://docs.cocogitto.io/
+# https://docs.cocogitto.io/guide/commit.html#conventional-commits
+ignore_merge_commits = true
+disable_changelog = false

@@ -1,0 +1,33 @@
+[tools]
+rust = "1.95.0"
+cocogitto = "7.0.0"
+lefthook = "2.1.6"
+mdbook = "latest"
+
+[tasks.setup]
+description = "Install hooks and toolchains"
+run = """
+rustup component add clippy rustfmt
+lefthook install
+cog check --from-latest-tag || echo "Note: Initial cog check failed, expected if no commits yet."
+"""
+
+[tasks.lint]
+description = "Run all workspace lints"
+run = "cargo clippy --workspace --all-targets --all-features -- -D warnings"
+
+[tasks.fmt]
+description = "Format all code in the workspace"
+run = "cargo fmt --all"
+
+[tasks.test]
+description = "Run all tests"
+run = "cargo test --workspace"
+
+[tasks.check]
+description = "Full pre-flight check (fmt + lint + test)"
+depends = ["fmt", "lint", "test"]
+
+[tasks.commit]
+description = "Standardized commit flow"
+run = "cog commit"
