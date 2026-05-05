@@ -1,0 +1,135 @@
+        workflow "Somatic-Variant-Calling" version="2.0.0" {
+
+    description "Advanced variant calling with matrix scattering, OOM retries, and conditional skipping."
+
+// 1. Module Imports (Solving the modularity problem cleanly)
+    import "github.com/org/bio-modules/fastqc@v1.2" as qc_module
+
+// 2. Global Parameters
+    parameters {
+        param "tumor_bams" path="s3://bams/tumors/*.bam" sort="name"
+        param "normal_bams" path="s3://bams/normals/*.bam" sort="name"
+        param "reference" path="s3://genomes/hg38.fa"
+        param "callers" {
+            - mutect2
+            - strelka
+        }
+    }
+
+// 3. Execution Environments (Notice the specific error-handling environments)
+    environments {
+        env "gatk-base" {
+            image "docker://broadinstitute/gatk:4.3.0" digest="sh256:...."
+            resources cpus=4 memory="16GB"
+        }
+        env "gatk-high-mem" {
+            image "docker://broadinstitute/gatk:4.3.0" digest="sh256:...."
+            resources cpus=4 memory="64GB"
+        }
+        env "strelka-env" {
+            image "docker://biocontainers/strelka:2.9.10" digest="sh256:...."
+            resources cpus=8 memory="16GB"
+        }
+    }
+
+    pipeline {
+    // Stage 1: External Sub-workflow
+        stage "quality-control" {
+            description "Runs an external, pre-validated KDL module"
+            use_module "qc_module"
+
+            inputs {
+            // Combine arrays into a single list for the QC module
+                list "all_bams" concat {
+                    - parameters.tumor_bams
+                    - parameters.normal_bams
+                }
+            }
+        // Outputs are automatically managed by the module's definition
+        }
+
+    // Stage 2: Combinatorial Matrix Scattering
+        stage "variant-calling" {
+            description "Run multiple callers across all tumor-normal pairs"
+
+        // Strategy "matrix": Creates a task for every combination of Caller x Pair
+            strategy "matrix" {
+                axis "caller" values="{parameters.callers}"
+                axis "pair" "zip" {
+                    - "{parameters.tumor_bams}"
+                    - "{parameters.normal_bams}"
+                }
+            }
+
+        // Dynamic environment selection based on the matrix axis
+            env {
+                if "matrix.caller == 'mutect2'" then="gatk-base"
+                if "matrix.caller == 'strelka'" then="strelka-env"
+            }
+
+        // Intelligent Error Handling (The "Smart Retry")
+            error_handling {
+                max_retries 2
+            // If the container is killed due to Out-Of-Memory (exit code 137), swap to the bigger environment
+                on_exit 137 env="gatk-high-mem"
+            }
+
+            inputs {
+                file "tumor" path="matrix.pair[0]"
+                file "normal" path="matrix.pair[1]"
+            }
+
+        // Embedded bash script block using KDL variables
+            exec {
+                script #"""
+                if [ "{matrix.caller}" = "mutect2" ]; then
+                    gatk Mutect2 -R {parameters.reference} -I {tumor} -I {normal} -normal normal_sample -O output.vcf
+                elif [ "{matrix.caller}" = "strelka" ]; then
+                    configureStrelkaSomaticWorkflow.py --normalBam {normal} --tumorBam {tumor} --referenceFasta {parameters.reference} --runDir ./work
+                    ./work/runWorkflow.py -m local -j 8
+                    cp ./work/results/variants/somatic.snvs.vcf.gz output.vcf
+                fi
+                """#
+            }
+
+            outputs {
+            // Dynamically name outputs to avoid collisions in S3
+                file "raw_vcf" path="s3://results/vcfs/{matrix.caller}_output.vcf"
+            }
+        }
+
+    // Stage 3: Conditional Execution / Skipping
+        stage "filter-variants" {
+            description "Filters VCFs, but skips if the VCF is empty"
+            depends_on "variant-calling"
+            env "gatk-base"
+
+            strategy "scatter" batch_size=1
+
+            inputs {
+                file "vcf" from="variant-calling.raw_vcf"
+            }
+
+        // Implementing the "Graceful Skip" logic we discussed
+            exec {
+                script #"""
+                # Check if VCF has actual variants (ignoring header lines)
+                VARIANT_COUNT=\$(grep -v '^#' {vcf} | wc -l)
+
+                if [ "\$VARIANT_COUNT" -eq 0 ]; then
+                    echo "No variants found. Skipping filtration step."
+                    # Reserved exit code tells the Go orchestrator to skip without failing
+                    exit 78
+                fi
+
+                gatk FilterMutectCalls -V {vcf} -O filtered.vcf
+                """#
+            }
+
+            outputs {
+            // Flagged as optional so the orchestrator doesn't crash if exit 78 is triggered
+                file "filtered_vcf" path="s3://results/filtered/filtered_{vcf.basename}.vcf" optional=#true
+            }
+        }
+    }
+}

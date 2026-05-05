@@ -10,8 +10,8 @@ struct Workflow {
 /// A simple description node
 /// ### Example
 /// `description "a description of this block"`
-struct Description {
-    value: String
+pub struct Description {
+    value: String,
 }
 
 /// A parameter of workflow execution.
@@ -41,10 +41,7 @@ enum Param {
     ///     - abc
     /// }
     /// ```
-    Literal {
-        name: String,
-        value: LiteralValue
-    }
+    Literal { name: String, value: LiteralValue },
 }
 /// A literal value, either a string, a number or a list of literal values
 enum LiteralValue {
@@ -56,11 +53,11 @@ enum LiteralValue {
 /// Sorting options supported by Glob
 enum GlobSort {
     Name,
-    Size
+    Size,
 }
 
 /// An execution environment declaration
-struct  Env {
+struct Env {
     /// A reference to this environment
     name: String,
     /// The image definition to use on this environment
@@ -71,17 +68,18 @@ struct  Env {
 struct Image {
     tag: String,
     digest: String,
-    resources: Resources
+    resources: Resources,
 }
 
 struct Resources {
     cpu: u8,
-    memory: Memory
+    memory: Memory,
 }
 
 enum Memory {
     String(String),
-    Int(u64),
+    Megabytes(u64),
+    Gigabytes(u64),
 }
 
 struct Stage {
@@ -93,32 +91,21 @@ struct Stage {
     use_env: UseEnv,
 }
 
-enum Strategy {
-    
-}
+enum Strategy {}
 
 enum Input {
-    Glob {
-        name: String,
-        path: String,
-    },
+    Glob { name: String, path: String },
 }
 
-enum InputOp {
-    Concat,
-}
 enum Output {
-    Glob {
-        name: String,
-        path: String,
-    }
+    Glob { name: String, path: String },
 }
 enum UseEnv {
     EnvRef(String),
     Conditional {
         conditions: Vec<ConditionExp>,
-        default: String
-    }
+        default: String,
+    },
 }
 
 enum ConditionExp {
@@ -127,7 +114,5 @@ enum ConditionExp {
     If {
         cond: Box<ConditionExp>,
         then: Box<ConditionExp>,
-    }
+    },
 }
-
-// - names should be unique within the workflow
