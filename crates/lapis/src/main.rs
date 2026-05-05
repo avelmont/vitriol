@@ -1,3 +1,5 @@
+mod ir;
+
 fn main() {
-    println!("Hello, world!");
+    println!("Starting Lapis...")
 }
